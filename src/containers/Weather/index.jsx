@@ -16,8 +16,9 @@ function Weather() {
     const [flippedPages, setFlippedPages] = useState([]);
     const [flippingIndex, setFlippingIndex] = useState(null);
     const [loadingPages, setLoadingPages] = useState(true);
+    const [loadingStage, setLoadingStage] = useState("locals"); // 'locals' | 'data'
 
-    // --- Função auxiliar: salva no localStorage ---
+    // --- Helper function: save to localStorage ---
     const savePagesToStorage = (updatedPages) => {
         const minimalData = updatedPages.map((p) => ({
             lat: p.lat,
@@ -29,7 +30,7 @@ function Weather() {
         localStorage.setItem("savedWeatherPages", JSON.stringify(minimalData));
     };
 
-    // --- Função: obter nome do local ---
+    // --- Function: get location name ---
     const fetchPlaceName = async (lat, lng) => {
         try {
             const res = await fetch(
@@ -43,7 +44,7 @@ function Weather() {
         }
     };
 
-    // --- Função: buscar dados do intervalo de datas ---
+    // --- Function: fetch data from date range ---
     const fetchWeatherForDateRange = async (lat, lng, startDate, endDate) => {
         if (!startDate || !endDate) return [];
 
@@ -91,7 +92,7 @@ function Weather() {
         }
     };
 
-    // --- Função: buscar dados de uma data específica ---
+    // --- Function: fetch data from a specific date ---
     const fetchSpecificDateData = async (lat, lng, date) => {
         if (!date) return null;
         try {
@@ -102,11 +103,22 @@ function Weather() {
             const data = await response.json();
 
             return {
-                t2m: data?.properties?.parameter?.T2M?.[formattedDate] ?? "N/A",
-                rh2m: data?.properties?.parameter?.RH2M?.[formattedDate] ?? "N/A",
+                t2m:
+                    data?.properties?.parameter?.T2M?.[formattedDate] !== -999
+                        ? data?.properties?.parameter?.T2M?.[formattedDate]
+                        : null,
+                rh2m:
+                    data?.properties?.parameter?.RH2M?.[formattedDate] !== -999
+                        ? data?.properties?.parameter?.RH2M?.[formattedDate]
+                        : null,
                 prectot:
-                    data?.properties?.parameter?.PRECTOTCORR?.[formattedDate] ?? "N/A",
-                ws10m: data?.properties?.parameter?.WS10M?.[formattedDate] ?? "N/A",
+                    data?.properties?.parameter?.PRECTOTCORR?.[formattedDate] !== -999
+                        ? data?.properties?.parameter?.PRECTOTCORR?.[formattedDate]
+                        : null,
+                ws10m:
+                    data?.properties?.parameter?.WS10M?.[formattedDate] !== -999
+                        ? data?.properties?.parameter?.WS10M?.[formattedDate]
+                        : null,
             };
         } catch (err) {
             console.error("Error fetching specific date data:", err);
@@ -114,7 +126,7 @@ function Weather() {
         }
     };
 
-    // --- Carregamento inicial ---
+    // --- Initial loading ---
     useEffect(() => {
         const loadPages = async () => {
             const savedShapes = JSON.parse(localStorage.getItem("drawnShapes")) || [];
@@ -128,7 +140,7 @@ function Weather() {
                     const [lng, lat] = coords;
                     const placeName = await fetchPlaceName(lat, lng);
 
-                    // Verifica se já há dados salvos para esse ponto
+                    // Checks if there is already data saved for this point
                     const existing = savedInputs.find(
                         (p) => p.lat === lat && p.lng === lng
                     );
@@ -137,7 +149,7 @@ function Weather() {
                     const endDate = existing?.endDate || "";
                     const specificDateInput = existing?.specificDateInput || "";
 
-                    // Recarrega dados automaticamente
+                    // Automatically reloads data
                     const data =
                         startDate && endDate
                             ? await fetchWeatherForDateRange(lat, lng, startDate, endDate)
@@ -169,12 +181,12 @@ function Weather() {
         loadPages();
     }, []);
 
-    // --- Atualiza o localStorage sempre que as páginas mudam (sem dados pesados) ---
+    // --- Updates localStorage whenever pages change (no heavy data) ---
     useEffect(() => {
         if (pages.length > 0) savePagesToStorage(pages);
     }, [pages]);
 
-    // --- Buscar intervalo ---
+    // --- Search range ---
     const handleFetchData = async (index) => {
         const page = pages[index];
         if (!page.startDate || !page.endDate) {
@@ -200,7 +212,7 @@ function Weather() {
         );
     };
 
-    // --- Buscar data específica ---
+    // --- Search for a specific date ---
     const handleFetchSpecificDate = async (index) => {
         const page = pages[index];
         if (!page.specificDateInput) return;
@@ -222,7 +234,7 @@ function Weather() {
         );
     };
 
-    // --- Virar página ---
+    // --- Turn page ---
     const handlePageFlip = (index) => {
         const isFlipped = flippedPages.includes(index);
         if (isFlipped) {
@@ -234,16 +246,17 @@ function Weather() {
         }
     };
 
-    // --- Renderização ---
     if (loadingPages) {
         return (
             <div className="weather-container">
                 <div className="loading-screen">
-                    <p>Loading locals...</p>
+                    {loadingStage === "locals" && <p>Loading local names...</p>}
+                    {loadingStage === "data" && <p>Fetching weather data...</p>}
                 </div>
             </div>
         );
     }
+
 
     return (
         <div className="weather-container">
@@ -393,24 +406,31 @@ function Weather() {
                                 <div className="page-content">
                                     {page.loadingSpecificDate && <p>Loading weather data...</p>}
 
-                                    {page.specificDateData && !page.loadingSpecificDate && (
+                                    {!page.loadingSpecificDate && page.specificDateData ? (
                                         <div className="weather-cards">
-                                            <p className="weather-info">&#9728; Temperature: {page.specificDateData.t2m} ℃</p>
-                                            <p className="weather-info">&#9729; Humidity: {page.specificDateData.rh2m} %</p>
-                                            <p className="weather-info">&#9730; Precipitation: {page.specificDateData.prectot} mm</p>
-                                            <p className="weather-info">&#9992; Wind Speed: {page.specificDateData.ws10m} m/s</p>
+                                            {page.specificDateData.t2m != null &&
+                                                page.specificDateData.rh2m != null &&
+                                                page.specificDateData.prectot != null &&
+                                                page.specificDateData.ws10m != null ? (
+                                                <>
+                                                    <p className="weather-info">&#9728; Temperature: {page.specificDateData.t2m} ℃</p>
+                                                    <p className="weather-info">&#9729; Humidity: {page.specificDateData.rh2m} %</p>
+                                                    <p className="weather-info">&#9730; Precipitation: {page.specificDateData.prectot} mm</p>
+                                                    <p className="weather-info">&#9992; Wind Speed: {page.specificDateData.ws10m} m/s</p>
+                                                </>
+                                            ) : (
+                                                <p className="weather-info">No data available yet :/</p>
+                                            )}
                                         </div>
-                                    )}
-
-                                    {!page.specificDateData && !page.loadingSpecificDate && (
+                                    ) : !page.loadingSpecificDate ? (
                                         <div className="no-data">
                                             <p>
-                                                Select a date and click "Get Weather Data" to see the
-                                                weather information for that specific day.
+                                                Select a date and click "Get Weather Data" to see the weather information for that specific day.
                                             </p>
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
+
 
                                 <div className="page-footer">
                                     <div className="navigation-buttons">

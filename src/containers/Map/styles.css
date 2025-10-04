@@ -1,0 +1,29 @@
+/* MAP */
+.map-container {
+    height: 90vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+
+.map-tilt {
+    position: relative;
+    height: 90%;
+    width: 80%;
+    box-shadow: 0 40px 80px rgb(0, 0, 0, 0.5);
+    border-radius: 10px;
+}
+
+.map {
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+}
+
+/* MAP DRAW TOOLS */
+.leaflet-draw-toolbar a:hover {
+  background-color: #d6d6d6;
+  cursor: pointer;
+}

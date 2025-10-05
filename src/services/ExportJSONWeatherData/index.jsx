@@ -58,7 +58,7 @@ export default function ExportJSONWeatherData() {
             // if missing required params, redirect to home
             if (!lat || !lng || !date || hour === null) {
                 console.warn("Missing lat/lng/date/hour in query string. Redirecting to /");
-                window.location.href = "/weather";
+                window.location.href = "/Tempora/weather";
                 return;
             }
 
@@ -228,11 +228,11 @@ export default function ExportJSONWeatherData() {
                 URL.revokeObjectURL(url);
 
                 setTimeout(() => {
-                    window.location.href = "/weather";
+                    window.location.href = "/Tempora/weather";
                 }, 1500);
             } catch (err) {
                 console.error("Export workflow failed:", err);
-                setTimeout(() => window.location.href = "/weather", 500);
+                setTimeout(() => window.location.href = "/Tempora/weather", 500);
             }
         })();
     }, []);

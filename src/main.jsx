@@ -10,19 +10,19 @@ import ExportCSVWeatherData from './services/ExportCSVWeatherData';
 
 function AppWrapper() {
   const location = useLocation();
-  console.log(location.pathname);
-  const hideNavbarPaths = ['/Tempora/', '/Tempora/export/json'];
+  // esconder navbar em '/' e na rota de exportação (pois ela não exibe UI)
+  const hideNavbarPaths = ['/', '/export'];
   const showNavbar = !hideNavbarPaths.includes(location.pathname);
 
   return (
     <>
       {showNavbar && <Navbar/>}
       <Routes>
-        <Route path='/Tempora' element={<Home/>}/>
-        <Route path='/Tempora/map' element={<Map/>}/>
-        <Route path='/Tempora/weather' element={<Weather/>}/>
-        <Route path='/Tempora/export/json' element={<ExportJSONWeatherData/>} />
-        <Route path='/Tempora/export/csv' element={<ExportCSVWeatherData/>} />
+        <Route path='/' element={<Home/>}/>
+        <Route path='/map' element={<Map/>}/>
+        <Route path='/weather' element={<Weather/>}/>
+        <Route path='/export/json' element={<ExportJSONWeatherData/>} />
+        <Route path='/export/csv' element={<ExportCSVWeatherData/>} />
       </Routes>
     </>
   )

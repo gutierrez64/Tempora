@@ -485,7 +485,7 @@ function Weather() {
 
     return (
         <div className="weather-container">
-            {(pages.length == 0) ? <p className="loading-screen">No <Link to="/Tempora/map" className="loading-screen">markers</Link> avaliable :/</p> : <div className="book">
+            {(pages.length == 0) ? <p className="loading-screen">No <Link to="/map" className="loading-screen">markers</Link> avaliable :/</p> : <div className="book">
                 {pages.map((page, index) => {
                     const isFlipped = flippedPages.includes(index);
                     const zIndex =
@@ -707,8 +707,8 @@ function Weather() {
                                             <div className="footer-container">
                                                 <div className="samples-note"><a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a></div>
 
-                                                <p>Download <Link to={`/Tempora/export/json?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>JSON data</Link> here</p>
-                                                <p>Download <Link to={`/Tempora/export/csv?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>CSV data</Link> here</p>
+                                                <p>Download <Link to={`/export/json?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>JSON data</Link> here</p>
+                                                <p>Download <Link to={`/export/csv?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>CSV data</Link> here</p>
                                             </div>
                                         </div>
 
@@ -837,8 +837,8 @@ function Weather() {
                                             <div className="footer-container">
                                                 <div className="samples-note">Basis of estimates: last {page.specificDateData.stats.samplesCount} samples (one per year, same date/time, last 10 years). <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a></div>
 
-                                                <p>Download <Link to={`/Tempora/export/json?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>JSON data</Link> here</p>
-                                                <p>Download <Link to={`/Tempora/export/csv?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>CSV data</Link> here</p>
+                                                <p>Download <Link to={`/export/json?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>JSON data</Link> here</p>
+                                                <p>Download <Link to={`/export/csv?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>CSV data</Link> here</p>
                                             </div>
                                         </div>
 

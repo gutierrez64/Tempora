@@ -133,23 +133,26 @@ function Weather() {
             const savedInputs =
                 JSON.parse(localStorage.getItem("savedWeatherPages")) || [];
 
+            // 🔹 Início da coleta de nomes
+            setLoadingStage("locals");
+
             const pagesWithData = await Promise.all(
                 savedShapes.map(async (geojson) => {
                     const coords = geojson.geometry?.coordinates;
                     if (!coords) return null;
                     const [lng, lat] = coords;
+
                     const placeName = await fetchPlaceName(lat, lng);
 
-                    // Checks if there is already data saved for this point
-                    const existing = savedInputs.find(
-                        (p) => p.lat === lat && p.lng === lng
-                    );
+                    // 🔹 Mudança de estágio para coleta de dados climáticos
+                    setLoadingStage("data");
+
+                    const existing = savedInputs.find((p) => p.lat === lat && p.lng === lng);
 
                     const startDate = existing?.startDate || "";
                     const endDate = existing?.endDate || "";
                     const specificDateInput = existing?.specificDateInput || "";
 
-                    // Automatically reloads data
                     const data =
                         startDate && endDate
                             ? await fetchWeatherForDateRange(lat, lng, startDate, endDate)

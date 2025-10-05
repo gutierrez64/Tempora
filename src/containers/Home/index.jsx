@@ -5,7 +5,7 @@ function Home() {
     const navigate = useNavigate();
     return (
         <div className="home">
-            <img src="../../../public/icon-transparent.png" alt="icon" />
+            <img src="/Tempora/icon-transparent.png" alt="icon" />
             <button onClick={() => navigate("/Tempora/map")}>Start</button>
             <div className="attribution">
                 <p>

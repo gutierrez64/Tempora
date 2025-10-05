@@ -398,7 +398,6 @@ function Weather() {
     const handleFetchData = async (index) => {
         const page = pages[index];
         if (!page.startDate || !page.endDate) {
-            alert("Select start and end dates.");
             return;
         }
 
@@ -608,6 +607,7 @@ function Weather() {
                                         </ResponsiveContainer>
                                     )}
                                 </div>
+                                <div className="samples-note">Weather data by <a href="https://power.larc.nasa.gov/">NASA POWER</a></div>
 
                                 <div className="page-footer">
                                     <p>
@@ -659,49 +659,57 @@ function Weather() {
 
                                     {/* If there is historical specificDateData */}
                                     {!page.loadingSpecificDate && page.specificDateData && page.specificDateData.type === "historical" ? (
-                                        <div className="weather-cards">
-                                            {page.specificDateData.t2m != null &&
-                                                page.specificDateData.rh2m != null &&
-                                                page.specificDateData.prectot != null &&
-                                                page.specificDateData.ws10m != null ? (
-                                                <>
-                                                    <div className="weather-info-title">
-                                                        {page.specificDateData.weather}
-                                                    </div><br />
-                                                    <div className="weather-info">
-                                                        <h3 className="labelT">&#9731; Temperature:</h3>
-                                                        <p className="label">{page.specificDateData.t2m} ℃</p>
-                                                        <p>Degree Celsius</p>
-                                                    </div>
-                                                    <div className="weather-info">
-                                                        <h3 className="labelT">&#9729; Humidity:</h3>
-                                                        <p className="label">{page.specificDateData.rh2m} %</p>
-                                                        <p>Percent</p>
-                                                    </div>
-                                                    <div className="weather-info">
-                                                        <h3 className="labelT">&#9730; Precipitation:</h3>
-                                                        <p className="label">{page.specificDateData.prectot} mm</p>
-                                                        <p>Millimeters</p>
-                                                    </div>
-                                                    <div className="weather-info">
-                                                        <h3 className="labelT">&#9992; Wind Speed:</h3>
-                                                        <p className="label">{page.specificDateData.ws10m} m/s</p>
-                                                        <p>kilometers per hour</p>
-                                                    </div>
-                                                    <div className="weather-info">
-                                                        <h3 className="labelT">&#127777; Apparent Temperature:</h3>
-                                                        <p className="label">{page.specificDateData.apparentTemperature} ℃</p>
-                                                        <p>Degree Celsius</p>
-                                                    </div>
-                                                    <div className="weather-info">
-                                                        <h3 className="labelT">&#9731; Snowfall:</h3>
-                                                        <p className="label">{page.specificDateData.snowfall} mm</p>
-                                                        <p>Millimeters</p>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <p className="weather-info">No data available yet :/</p>
-                                            )}
+                                        <div>
+                                            <div className="weather-cards">
+                                                {page.specificDateData.t2m != null &&
+                                                    page.specificDateData.rh2m != null &&
+                                                    page.specificDateData.prectot != null &&
+                                                    page.specificDateData.ws10m != null ? (
+                                                    <>
+                                                        <div className="weather-info-title">
+                                                            {page.specificDateData.weather}
+                                                        </div><br />
+                                                        <div className="weather-info">
+                                                            <h3 className="labelT">&#9731; Temperature:</h3>
+                                                            <p className="label">{page.specificDateData.t2m} ℃</p>
+                                                            <p>Degree Celsius</p>
+                                                        </div>
+                                                        <div className="weather-info">
+                                                            <h3 className="labelT">&#9729; Humidity:</h3>
+                                                            <p className="label">{page.specificDateData.rh2m} %</p>
+                                                            <p>Percent</p>
+                                                        </div>
+                                                        <div className="weather-info">
+                                                            <h3 className="labelT">&#9730; Precipitation:</h3>
+                                                            <p className="label">{page.specificDateData.prectot} mm</p>
+                                                            <p>Millimeters</p>
+                                                        </div>
+                                                        <div className="weather-info">
+                                                            <h3 className="labelT">&#9992; Wind Speed:</h3>
+                                                            <p className="label">{page.specificDateData.ws10m} m/s</p>
+                                                            <p>kilometers per hour</p>
+                                                        </div>
+                                                        <div className="weather-info">
+                                                            <h3 className="labelT">&#127777; Apparent Temperature:</h3>
+                                                            <p className="label">{page.specificDateData.apparentTemperature} ℃</p>
+                                                            <p>Degree Celsius</p>
+                                                        </div>
+                                                        <div className="weather-info">
+                                                            <h3 className="labelT">&#9731; Snowfall:</h3>
+                                                            <p className="label">{page.specificDateData.snowfall} mm</p>
+                                                            <p>Millimeters</p>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <p className="weather-info">No data available yet :/</p>
+                                                )}
+                                            </div>
+                                            <div className="footer-container">
+                                                <div className="samples-note"><a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a></div>
+
+                                                <p>Download <Link to={`/export/json?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>JSON data</Link> here</p>
+                                                <p>Download <Link to={`/export/csv?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>CSV data</Link> here</p>
+                                            </div>
                                         </div>
 
                                     ) : (!page.loadingSpecificDate && page.specificDateData && page.specificDateData.type === "climatology") ? (
@@ -724,7 +732,7 @@ function Weather() {
                                                         </div>
                                                         <div className="stat-row">
                                                             <div className="stat-key">Common range (25%–75%):</div>
-                                                            <div className="stat-value">{page.specificDateData.stats.t2m.q1 ?? "N/A"} – {page.specificDateData.stats.t2m.q3 ?? "N/A"} ℃</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.t2m.q1.toFixed(1) ?? "N/A"} ℃ – {page.specificDateData.stats.t2m.q3.toFixed(1) ?? "N/A"} ℃</div>
                                                         </div>
                                                         <div className="stat-explain">
                                                             What this means: historically, for the same date and time, the temperature usually stays close to the reported average — the variation shows how different it can be.
@@ -826,7 +834,12 @@ function Weather() {
                                                 )}
                                             </div>
 
-                                            <div className="samples-note">Basis of estimates: last {page.specificDateData.stats.samplesCount} samples (one per year, same date/time, last 10 years).</div>
+                                            <div className="footer-container">
+                                                <div className="samples-note">Basis of estimates: last {page.specificDateData.stats.samplesCount} samples (one per year, same date/time, last 10 years). <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a></div>
+
+                                                <p>Download <Link to={`/export/json?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>JSON data</Link> here</p>
+                                                <p>Download <Link to={`/export/csv?lat=${page.lat}&lng=${page.lng}&date=${page.specificDateInput}&hour=${page.specificHourInput}`}>CSV data</Link> here</p>
+                                            </div>
                                         </div>
 
 

@@ -101,7 +101,7 @@ function Map() {
                 </div>`;
             }
 
-            forecastContent += `</div></div>`;
+            forecastContent += `</div><br/><div class="samples-note"><a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a></div></div>`;
 
             layer.setPopupContent(forecastContent);
         } catch (err) {

@@ -10,6 +10,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import "./styles.css";
+import { Link } from "react-router-dom";
 
 function Weather() {
     const [pages, setPages] = useState([]);
@@ -56,7 +57,7 @@ function Weather() {
 
         try {
             const res = await fetch(
-                `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOT,WS10M&community=AG&longitude=${lng}&latitude=${lat}&start=${startDateFormatted}&end=${endDateFormatted}&format=JSON`
+                `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOT,WS10M,ALLSKY_SFC_SW_DWN,T2MWET&community=AG&longitude=${lng}&latitude=${lat}&start=${startDateFormatted}&end=${endDateFormatted}&format=JSON`
             );
             const data = await res.json();
 
@@ -84,6 +85,14 @@ function Weather() {
                         data?.properties?.parameter?.WS10M?.[dateKey] !== -999
                             ? data?.properties?.parameter?.WS10M?.[dateKey]
                             : null,
+                    solarRadiation:
+                        data?.properties?.parameter?.ALLSKY_SFC_SW_DWN?.[dateKey] !== -999
+                            ? data?.properties?.parameter?.ALLSKY_SFC_SW_DWN?.[dateKey]
+                            : null,
+                    heatIndex:
+                        data?.properties?.parameter?.T2MWET?.[dateKey] !== -999
+                            ? data?.properties?.parameter?.T2MWET?.[dateKey]
+                            : null,
                 };
             });
         } catch (err) {
@@ -98,33 +107,31 @@ function Weather() {
         try {
             const formattedDate = date.replace(/-/g, "");
             const response = await fetch(
-                `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOT,WS10M&community=AG&longitude=${lng}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`
+                `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOT,WS10M,ALLSKY_SFC_SW_DWN,T2MWET&community=AG&longitude=${lng}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`
             );
             const data = await response.json();
+            const params = data?.properties?.parameter;
+
+            if (!params) {
+                console.warn("No parameter data available for this date/location.");
+                return null;
+            }
 
             return {
-                t2m:
-                    data?.properties?.parameter?.T2M?.[formattedDate] !== -999
-                        ? data?.properties?.parameter?.T2M?.[formattedDate]
-                        : null,
-                rh2m:
-                    data?.properties?.parameter?.RH2M?.[formattedDate] !== -999
-                        ? data?.properties?.parameter?.RH2M?.[formattedDate]
-                        : null,
-                prectot:
-                    data?.properties?.parameter?.PRECTOTCORR?.[formattedDate] !== -999
-                        ? data?.properties?.parameter?.PRECTOTCORR?.[formattedDate]
-                        : null,
-                ws10m:
-                    data?.properties?.parameter?.WS10M?.[formattedDate] !== -999
-                        ? data?.properties?.parameter?.WS10M?.[formattedDate]
-                        : null,
+                t2m: params?.T2M?.[formattedDate] !== -999 ? params.T2M[formattedDate] : null,
+                rh2m: params?.RH2M?.[formattedDate] !== -999 ? params.RH2M[formattedDate] : null,
+                prectot: params?.PRECTOTCORR?.[formattedDate] !== -999 ? params.PRECTOTCORR[formattedDate] : null,
+                ws10m: params?.WS10M?.[formattedDate] !== -999 ? params.WS10M[formattedDate] : null,
+                solarRadiation: params?.ALLSKY_SFC_SW_DWN?.[formattedDate] !== -999 ? params.ALLSKY_SFC_SW_DWN[formattedDate] : null,
+                heatIndex: params?.T2MWET?.[formattedDate] !== -999 ? params.T2MWET[formattedDate] : null,
             };
         } catch (err) {
             console.error("Error fetching specific date data:", err);
             return null;
         }
     };
+
+
 
     // --- Initial loading ---
     useEffect(() => {
@@ -133,7 +140,6 @@ function Weather() {
             const savedInputs =
                 JSON.parse(localStorage.getItem("savedWeatherPages")) || [];
 
-            // 🔹 Início da coleta de nomes
             setLoadingStage("locals");
 
             const pagesWithData = await Promise.all(
@@ -144,7 +150,6 @@ function Weather() {
 
                     const placeName = await fetchPlaceName(lat, lng);
 
-                    // 🔹 Mudança de estágio para coleta de dados climáticos
                     setLoadingStage("data");
 
                     const existing = savedInputs.find((p) => p.lat === lat && p.lng === lng);
@@ -263,7 +268,7 @@ function Weather() {
 
     return (
         <div className="weather-container">
-            <div className="book">
+            {(pages.length == 0) ? <p className="loading-screen">No <Link to="/map" className="loading-screen">markers</Link> avaliable :/</p> : <div className="book">
                 {pages.map((page, index) => {
                     const isFlipped = flippedPages.includes(index);
                     const zIndex =
@@ -367,6 +372,20 @@ function Weather() {
                                                     stroke="#a8bae4"
                                                     dot={false}
                                                 />
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="solarRadiation"
+                                                    name="Solar Radiation (W/m²)"
+                                                    stroke="#a8bae4"
+                                                    dot={false}
+                                                />
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="heatIndex"
+                                                    name="Heat Index (℃)"
+                                                    stroke="#a8bae4"
+                                                    dot={false}
+                                                />
                                             </LineChart>
                                         </ResponsiveContainer>
                                     )}
@@ -416,10 +435,24 @@ function Weather() {
                                                 page.specificDateData.prectot != null &&
                                                 page.specificDateData.ws10m != null ? (
                                                 <>
-                                                    <p className="weather-info">&#9728; Temperature: {page.specificDateData.t2m} ℃</p>
-                                                    <p className="weather-info">&#9729; Humidity: {page.specificDateData.rh2m} %</p>
-                                                    <p className="weather-info">&#9730; Precipitation: {page.specificDateData.prectot} mm</p>
-                                                    <p className="weather-info">&#9992; Wind Speed: {page.specificDateData.ws10m} m/s</p>
+                                                    <p className="weather-info">
+                                                        &#9731; Temperature: {page.specificDateData.t2m} ℃
+                                                    </p>
+                                                    <p className="weather-info">
+                                                        &#9729; Humidity: {page.specificDateData.rh2m} %
+                                                    </p>
+                                                    <p className="weather-info">
+                                                        &#9730; Precipitation: {page.specificDateData.prectot} mm
+                                                    </p>
+                                                    <p className="weather-info">
+                                                        &#9992; Wind Speed: {page.specificDateData.ws10m} m/s
+                                                    </p>
+                                                    <p className="weather-info">
+                                                        &#9728; Solar Radiation: {page.specificDateData.solarRadiation} W/m²
+                                                    </p>
+                                                    <p className="weather-info">
+                                                        &#127777; Heat Index: {page.specificDateData.heatIndex} ℃
+                                                    </p>
                                                 </>
                                             ) : (
                                                 <p className="weather-info">No data available yet :/</p>
@@ -444,7 +477,7 @@ function Weather() {
                         </div>
                     );
                 })}
-            </div>
+            </div>}
         </div>
     );
 }

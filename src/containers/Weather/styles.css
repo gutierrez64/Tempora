@@ -1,115 +1,121 @@
 .weather-container {
-  height: 90vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  perspective: 1000px;
-  font-family: Arial, Helvetica, sans-serif;
+    height: 90vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .loading-screen {
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.loading-screen Link {
+    color: #fff;
+    font-size: 16px;
+    font-weight: bold;
 }
 
 /* BOOK */
 .book {
-  position: relative;
-  width: 65%;
-  height: 90%;
-  margin: 50px auto;
-  transform-style: preserve-3d;
-  transition: transform 0.6s ease;
-  transform-origin: bottom center;
-  transform: rotateX(25deg) translateY(-20px);
-  background-color: #3d9bff;
-  border-radius: 20px;
-  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+    position: relative;
+    width: 65%;
+    height: 90%;
+    margin: 50px auto;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+    transform-origin: bottom center;
+    transform: rotateX(25deg) translateY(-20px);
+    background-color: #3d9bff;
+    border-radius: 20px;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
 }
 
 .book:hover {
-  transform: rotateX(0deg) translateY(0px);
+    transform: rotateX(0deg) translateY(0px);
 }
 
 /* PAGE */
 .book-page {
-  position: absolute;
-  width: 50%;
-  height: 100%;
-  top: 0;
-  right: 0;
-  transform-style: preserve-3d;
-  transform-origin: left center;
-  transition: transform 1s ease;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-  border-bottom-right-radius: 20px;
-  border-top-right-radius: 20px;
-  background: #fff;
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    top: 0;
+    right: 0;
+    transform-style: preserve-3d;
+    transform-origin: left center;
+    transition: transform 1s ease;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+    border-bottom-right-radius: 20px;
+    border-top-right-radius: 20px;
+    background: #fff;
 }
 
 .book-page.flipped {
-  transform: rotateY(-180deg);
+    transform: rotateY(-180deg);
 }
 
 .page-front,
 .page-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border: 1px solid #ccc;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-sizing: border-box;
-  padding: 20px;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border: 1px solid #ccc;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 20px;
 }
 
 .page-back {
-  transform: rotateY(180deg);
-  border-bottom-left-radius: 20px;
-  border-top-left-radius: 20px;
+    transform: rotateY(180deg);
+    border-bottom-left-radius: 20px;
+    border-top-left-radius: 20px;
 }
 
 .page-front {
-  border-bottom-right-radius: 20px;
-  border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-top-right-radius: 20px;
 }
 
 /* HEADER */
 .page-header {
-  text-align: center;
-  font-size: 5px;
-  font-weight: bold;
-  color: #333;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 5px;
+    text-align: center;
+    font-size: 5px;
+    font-weight: bold;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
 }
 
 /* CONTENT */
 .page-content {
-  display: flex;
-  flex-direction: column;
-  gap: 160px;
-  height: 100%;
-  overflow-y: auto;
-  padding: 15px;
-  box-sizing: border-box;
-  text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 160px;
+    height: 100%;
+    overflow-y: auto;
+    padding: 15px;
+    box-sizing: border-box;
+    text-align: center;
 }
 
 .page-content button {
-  background-color: #0a72d3;
-  color: #fff;
-  border: none;
-  padding: 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 16px;
+    background-color: #0a72d3;
+    color: #fff;
+    border: none;
+    padding: 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 16px;
 }
 
 .page-content button:hover {
@@ -118,127 +124,127 @@
 
 /* SCROLLBAR */
 .page-content::-webkit-scrollbar {
-  width: 8px;
+    width: 8px;
 }
 
 .page-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
+    background: #f1f1f1;
+    border-radius: 10px;
 }
 
 .page-content::-webkit-scrollbar-thumb {
-  background: #0a72d3;
-  border-radius: 10px;
+    background: #0a72d3;
+    border-radius: 10px;
 }
 
 .page-content::-webkit-scrollbar-thumb:hover {
-  background: #095cb0;
+    background: #095cb0;
 }
 
 /* FIREFOX */
 .page-content {
-  scrollbar-width: thin;
-  scrollbar-color: #0a72d3 #f1f1f1;
+    scrollbar-width: thin;
+    scrollbar-color: #0a72d3 #f1f1f1;
 }
 
 .input-section {
-  display: flex;
-  flex-direction: column;
-  border-radius: 10px;
-  justify-content: center;
-  gap: 5px;
-  padding: 5px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px;
 }
 
 .input-section input {
-  background-color: #fff;
-  color: #000;
-  font-weight: bold;
-  border: none;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 12px;
+    background-color: #fff;
+    color: #000;
+    font-weight: bold;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 12px;
 }
 
 .input-section button {
-  background-color: #0a72d3;
-  color: #fff;
-  border: none;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
+    background-color: #0a72d3;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
 }
 
 .input-section button:hover {
-  background-color: #095cb0;
+    background-color: #095cb0;
 }
 
 /* WEATHER DATA */
 .weather-data {
-  text-align: center;
-  font-size: 16px;
+    text-align: center;
+    font-size: 16px;
 }
 
 .weather-data p {
-  font-size: 20px;
-  font-weight: bold;
-  color: #0a72d3;
-  text-align: center;
-  border-style: solid;
-  border-radius: 10px;
-  border-width: 1px;
-  padding: 5px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #0a72d3;
+    text-align: center;
+    border-style: solid;
+    border-radius: 10px;
+    border-width: 1px;
+    padding: 5px;
 }
 
 .weather-data h3 {
-  font-size: 18px;
-  margin-bottom: 10px;
-  color: #095cb0;
-  font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #095cb0;
+    font-weight: bold;
 }
 
 /* FOOTER */
 .page-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #ddd;
 }
 
 .navigation-buttons {
-  display: flex;
-  gap: 10px;
+    display: flex;
+    gap: 10px;
 }
 
 .navigation-buttons button {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 8px;
-  background-color: #fff;
-  color: #333;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
 }
 
 .navigation-buttons button:hover {
-  background-color: #0a72d3;
-  color: #fff;
+    background-color: #0a72d3;
+    color: #fff;
 }
 
 .weather-info {
-  font-size: 18px;
-  font-weight: bold;
-  color: #0a72d3;
-  text-align: center;
-  border-style: solid;
-  border-radius: 10px;
-  border-width: 1px;
-  padding: 5px;
-  transition: background-color 0.3s;
-  transition: color 0.3s;
+    font-size: 18px;
+    font-weight: bold;
+    color: #0a72d3;
+    text-align: center;
+    border-style: solid;
+    border-radius: 10px;
+    border-width: 1px;
+    padding: 5px;
+    transition: background-color 0.3s;
+    transition: color 0.3s;
 }
 
 .weather-info:hover {
@@ -248,45 +254,45 @@
 
 /* Estilos para os inputs de data range */
 .date-range-inputs {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .date-input-group {
-  display: flex;
-  gap: 5px;
+    display: flex;
+    gap: 5px;
 }
 
 .date-input-group label {
-  font-size: 10px;
-  color: #666;
-  font-weight: bold;
+    font-size: 10px;
+    color: #666;
+    font-weight: bold;
 }
 
 .date-range-info {
-  text-align: center;
-  margin-bottom: 20px;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 5px;
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
 }
 
 .date-range-info p {
-  margin: 5px 0;
-  color: #555;
-  font-size: 0.9em;
+    margin: 5px 0;
+    color: #555;
+    font-size: 0.9em;
 }
 
 @media (max-width: 768px) {
-  .date-range-inputs {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .date-input-group {
-    width: 100%;
-  }
+    .date-range-inputs {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .date-input-group {
+        width: 100%;
+    }
 }

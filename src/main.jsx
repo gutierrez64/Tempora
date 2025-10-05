@@ -11,7 +11,7 @@ import ExportCSVWeatherData from './services/ExportCSVWeatherData';
 function AppWrapper() {
   const location = useLocation();
   console.log(location.pathname);
-  const hideNavbarPaths = ['/Tempora', '/Tempora/export'];
+  const hideNavbarPaths = ['/Tempora/', '/Tempora/export/json'];
   const showNavbar = !hideNavbarPaths.includes(location.pathname);
 
   return (

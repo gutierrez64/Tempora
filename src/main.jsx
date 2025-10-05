@@ -10,8 +10,7 @@ import ExportCSVWeatherData from './services/ExportCSVWeatherData';
 
 function AppWrapper() {
   const location = useLocation();
-  // esconder navbar em '/' e na rota de exportação (pois ela não exibe UI)
-  const hideNavbarPaths = ['/', '/export'];
+  const hideNavbarPaths = ['/Tempora', '/Tempora/export'];
   const showNavbar = !hideNavbarPaths.includes(location.pathname);
 
   return (

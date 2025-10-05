@@ -6,7 +6,7 @@ function Home() {
     return (
         <div className="home">
             <img src="../../../public/icon-transparent.png" alt="icon" />
-            <button onClick={() => navigate("/map")}>Start</button>
+            <button onClick={() => navigate("/Tempora/map")}>Start</button>
             <div className="attribution">
                 <p>
                     Weather data by <a href="https://open-meteo.com/">Open-Meteo</a> (CC BY 4.0) and <a href="https://power.larc.nasa.gov/">NASA POWER</a> ·

@@ -157,10 +157,11 @@
 }
 
 .input-section input {
-    background-color: #fff;
+    background-color: #f6f6f6;
     color: #000;
     font-weight: bold;
     border: none;
+    border-width: 1px;
     padding: 12px;
     border-radius: 8px;
     font-size: 12px;
@@ -234,6 +235,25 @@
     color: #fff;
 }
 
+.weather-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    justify-content: center;
+}
+
+.weather-info-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #0a72d3;
+    text-align: left;
+    border-radius: 10px;
+    padding: 5px;
+    transition: background-color 0.3s;
+    transition: color 0.3s;
+    margin: 0px;
+}
+
 .weather-info {
     font-size: 18px;
     font-weight: bold;
@@ -242,14 +262,30 @@
     border-style: solid;
     border-radius: 10px;
     border-width: 1px;
-    padding: 5px;
-    transition: background-color 0.3s;
-    transition: color 0.3s;
+    padding: 10px;
+    transition: padding 0.2s;
 }
 
 .weather-info:hover {
-    background-color: #7fc1ff30;
+    padding: 20px;
+}
+
+.weather-info .labelT {
+    font-size: 14px;
+    font-weight: bold;
+    color: #222;
+    margin-bottom: 0px;
+}
+
+.weather-info .label {
+    font-size: 32px;
     color: #095cb0;
+}
+
+.weather-info p {
+    font-size: 9px;
+    font-weight: bold;
+    color: #222;
 }
 
 /* Estilos para os inputs de data range */

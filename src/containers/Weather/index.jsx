@@ -17,7 +17,7 @@ function Weather() {
     const [flippedPages, setFlippedPages] = useState([]);
     const [flippingIndex, setFlippingIndex] = useState(null);
     const [loadingPages, setLoadingPages] = useState(true);
-    const [loadingStage, setLoadingStage] = useState("locals"); // 'locals' | 'data'
+    const [loadingStage, setLoadingStage] = useState("locals");
 
     // --- Helper function: save to localStorage ---
     const savePagesToStorage = (updatedPages) => {
@@ -27,9 +27,12 @@ function Weather() {
             startDate: p.startDate,
             endDate: p.endDate,
             specificDateInput: p.specificDateInput,
+            specificHourInput: p.specificHourInput,
         }));
         localStorage.setItem("savedWeatherPages", JSON.stringify(minimalData));
     };
+
+
 
     // --- Function: get location name ---
     const fetchPlaceName = async (lat, lng) => {
@@ -101,35 +104,75 @@ function Weather() {
         }
     };
 
-    // --- Function: fetch data from a specific date ---
-    const fetchSpecificDateData = async (lat, lng, date) => {
-        if (!date) return null;
+    // --- Function: fetch data from a specific date and hour (Open-Meteo) ---
+    const fetchSpecificDateData = async (lat, lng, date, hour) => {
+        if (!date || hour === undefined) return null;
         try {
-            const formattedDate = date.replace(/-/g, "");
+            const startDate = date;
+            const endDate = date;
+
             const response = await fetch(
-                `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M,RH2M,PRECTOT,WS10M,ALLSKY_SFC_SW_DWN,T2MWET&community=AG&longitude=${lng}&latitude=${lat}&start=${formattedDate}&end=${formattedDate}&format=JSON`
+                `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,apparent_temperature,weathercode&start_date=${startDate}&end_date=${endDate}&timezone=UTC`
             );
             const data = await response.json();
-            const params = data?.properties?.parameter;
 
-            if (!params) {
-                console.warn("No parameter data available for this date/location.");
+            if (!data?.hourly) {
+                console.warn("No hourly data available for this date/location.");
                 return null;
             }
 
+            const hourIndex = data.hourly.time.findIndex(t => new Date(t).getUTCHours() === parseInt(hour));
+            if (hourIndex === -1) return null;
+
+            const weathercodeMap = {
+                0: "Clear sky",
+                1: "Mainly clear",
+                2: "Partly cloudy",
+                3: "Overcast",
+                45: "Fog",
+                48: "Depositing rime fog",
+                51: "Drizzle: Light",
+                53: "Drizzle: Moderate",
+                55: "Drizzle: Dense",
+                56: "Freezing Drizzle: Light",
+                57: "Freezing Drizzle: Dense",
+                61: "Rain: Slight",
+                63: "Rain: Moderate",
+                65: "Rain: Heavy",
+                66: "Freezing Rain: Light",
+                67: "Freezing Rain: Heavy",
+                71: "Snow fall: Slight",
+                73: "Snow fall: Moderate",
+                75: "Snow fall: Heavy",
+                77: "Snow grains",
+                80: "Rain showers: Slight",
+                81: "Rain showers: Moderate",
+                82: "Rain showers: Violent",
+                85: "Snow showers: Slight",
+                86: "Snow showers: Heavy",
+                95: "Thunderstorm: Slight/Moderate",
+                96: "Thunderstorm with slight hail",
+                99: "Thunderstorm with heavy hail"
+            };
+            console.log(weathercodeMap[data.hourly.weathercode[hourIndex]]);
+
             return {
-                t2m: params?.T2M?.[formattedDate] !== -999 ? params.T2M[formattedDate] : null,
-                rh2m: params?.RH2M?.[formattedDate] !== -999 ? params.RH2M[formattedDate] : null,
-                prectot: params?.PRECTOTCORR?.[formattedDate] !== -999 ? params.PRECTOTCORR[formattedDate] : null,
-                ws10m: params?.WS10M?.[formattedDate] !== -999 ? params.WS10M[formattedDate] : null,
-                solarRadiation: params?.ALLSKY_SFC_SW_DWN?.[formattedDate] !== -999 ? params.ALLSKY_SFC_SW_DWN[formattedDate] : null,
-                heatIndex: params?.T2MWET?.[formattedDate] !== -999 ? params.T2MWET[formattedDate] : null,
+                t2m: data.hourly.temperature_2m[hourIndex],
+                rh2m: data.hourly.relative_humidity_2m[hourIndex],
+                prectot: data.hourly.precipitation[hourIndex],
+                ws10m: data.hourly.wind_speed_10m[hourIndex],
+                apparentTemperature: data.hourly.apparent_temperature[hourIndex],
+                weather: weathercodeMap[data.hourly.weathercode[hourIndex]] ?? "Unknown",
             };
         } catch (err) {
             console.error("Error fetching specific date data:", err);
             return null;
         }
     };
+
+
+
+
 
 
 
@@ -157,15 +200,18 @@ function Weather() {
                     const startDate = existing?.startDate || "";
                     const endDate = existing?.endDate || "";
                     const specificDateInput = existing?.specificDateInput || "";
+                    const specificHourInput = existing?.specificHourInput || "";
 
                     const data =
                         startDate && endDate
                             ? await fetchWeatherForDateRange(lat, lng, startDate, endDate)
                             : null;
 
-                    const specificDateData = specificDateInput
-                        ? await fetchSpecificDateData(lat, lng, specificDateInput)
-                        : null;
+                    const specificDateData =
+                        specificDateInput && specificHourInput
+                            ? await fetchSpecificDateData(lat, lng, specificDateInput, specificHourInput)
+                            : null;
+
 
                     return {
                         lat,
@@ -176,9 +222,12 @@ function Weather() {
                         data,
                         loading: false,
                         specificDateInput,
+                        specificHourInput,
                         specificDateData,
                         loadingSpecificDate: false,
                     };
+
+
                 })
             );
 
@@ -223,16 +272,19 @@ function Weather() {
     // --- Search for a specific date ---
     const handleFetchSpecificDate = async (index) => {
         const page = pages[index];
-        if (!page.specificDateInput) return;
+        if (!page.specificDateInput || page.specificHourInput == null) return;
 
         setPages((prev) =>
-            prev.map((p, i) => (i === index ? { ...p, loadingSpecificDate: true } : p))
+            prev.map((p, i) =>
+                i === index ? { ...p, loadingSpecificDate: true } : p
+            )
         );
 
         const specificDateData = await fetchSpecificDateData(
             page.lat,
             page.lng,
-            page.specificDateInput
+            page.specificDateInput,
+            page.specificHourInput
         );
 
         setPages((prev) =>
@@ -241,6 +293,7 @@ function Weather() {
             )
         );
     };
+
 
     // --- Turn page ---
     const handlePageFlip = (index) => {
@@ -419,6 +472,17 @@ function Weather() {
                                             }}
                                             placeholder="Select a specific date"
                                         />
+                                        <input
+                                            type="number"
+                                            value={page.specificHourInput}
+                                            onChange={(e) => {
+                                                const updated = [...pages];
+                                                updated[index].specificHourInput = e.target.value;
+                                                setPages(updated);
+                                            }}
+                                            placeholder="Select a hour (0-23)"
+                                        />
+
                                         <button onClick={() => handleFetchSpecificDate(index)}>
                                             Get Weather Data
                                         </button>
@@ -435,24 +499,34 @@ function Weather() {
                                                 page.specificDateData.prectot != null &&
                                                 page.specificDateData.ws10m != null ? (
                                                 <>
-                                                    <p className="weather-info">
-                                                        &#9731; Temperature: {page.specificDateData.t2m} ℃
-                                                    </p>
-                                                    <p className="weather-info">
-                                                        &#9729; Humidity: {page.specificDateData.rh2m} %
-                                                    </p>
-                                                    <p className="weather-info">
-                                                        &#9730; Precipitation: {page.specificDateData.prectot} mm
-                                                    </p>
-                                                    <p className="weather-info">
-                                                        &#9992; Wind Speed: {page.specificDateData.ws10m} m/s
-                                                    </p>
-                                                    <p className="weather-info">
-                                                        &#9728; Solar Radiation: {page.specificDateData.solarRadiation} W/m²
-                                                    </p>
-                                                    <p className="weather-info">
-                                                        &#127777; Heat Index: {page.specificDateData.heatIndex} ℃
-                                                    </p>
+                                                    <div className="weather-info-title">
+                                                        {page.specificDateData.weather}
+                                                    </div><br />
+                                                    <div className="weather-info">
+                                                        <h3 className="labelT">&#9731; Temperature:</h3>
+                                                        <p className="label">{page.specificDateData.t2m} ℃</p>
+                                                        <p>Degree Celsius</p>
+                                                    </div>
+                                                    <div className="weather-info">
+                                                        <h3 className="labelT">&#9729; Humidity:</h3>
+                                                        <p className="label">{page.specificDateData.rh2m} %</p>
+                                                        <p>Degree Celsius</p>
+                                                    </div>
+                                                    <div className="weather-info">
+                                                        <h3 className="labelT">&#9730; Precipitation:</h3>
+                                                        <p className="label">{page.specificDateData.prectot} mm</p>
+                                                        <p>Degree Celsius</p>
+                                                    </div>
+                                                    <div className="weather-info">
+                                                        <h3 className="labelT">&#9992; Wind Speed:</h3>
+                                                        <p className="label">{page.specificDateData.ws10m} m/s</p>
+                                                        <p>Degree Celsius</p>
+                                                    </div>
+                                                    <div className="weather-info">
+                                                        <h3 className="labelT">&#127777; Apparent Temperature:</h3>
+                                                        <p className="label">{page.specificDateData.apparentTemperature} ℃</p>
+                                                        <p>Degree Celsius</p>
+                                                    </div>
                                                 </>
                                             ) : (
                                                 <p className="weather-info">No data available yet :/</p>
@@ -461,12 +535,11 @@ function Weather() {
                                     ) : !page.loadingSpecificDate ? (
                                         <div className="no-data">
                                             <p>
-                                                Select a date and click "Get Weather Data" to see the weather information for that specific day.
+                                                Select a date and hour and click "Get Weather Data" to see the weather information.
                                             </p>
                                         </div>
                                     ) : null}
                                 </div>
-
 
                                 <div className="page-footer">
                                     <div className="navigation-buttons">
@@ -474,6 +547,7 @@ function Weather() {
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     );
                 })}

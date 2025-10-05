@@ -245,13 +245,13 @@
 .weather-info-title {
     font-size: 20px;
     font-weight: bold;
-    color: #0a72d3;
+    color: #222;
     text-align: left;
     border-radius: 10px;
-    padding: 5px;
     transition: background-color 0.3s;
     transition: color 0.3s;
-    margin: 0px;
+    margin-bottom: 10px;
+    margin-top: 10px;
 }
 
 .weather-info {
@@ -263,29 +263,28 @@
     border-radius: 10px;
     border-width: 1px;
     padding: 10px;
-    transition: padding 0.2s;
 }
 
 .weather-info:hover {
-    padding: 20px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .weather-info .labelT {
     font-size: 14px;
     font-weight: bold;
-    color: #222;
+    color: #333;
     margin-bottom: 0px;
 }
 
 .weather-info .label {
     font-size: 32px;
-    color: #095cb0;
+    color: #0a72d3;
 }
 
 .weather-info p {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: bold;
-    color: #222;
+    color: #555;
 }
 
 /* Estilos para os inputs de data range */
@@ -331,4 +330,95 @@
     .date-input-group {
         width: 100%;
     }
+}
+
+/* =========================
+   Climatology / Future Data Styles
+   ========================= */
+
+.climatology-container {
+    display: block;
+    text-align: left;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 15px;
+}
+
+.climatology-title {
+    font-weight: 700;
+    color: #0a72d3;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.climatology-section {
+    margin-bottom: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #e6f0fb;
+}
+
+.climatology-section:hover {
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.section-title {
+    font-weight: 700;
+    color: #0a43d3;
+    margin-bottom: 8px;
+}
+
+.stat-row {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.stat-key {
+    min-width: 160px;
+    color: #333;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.stat-value {
+    color: #0a72d3;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.stat-explain {
+    color: #5b6b7a;
+    font-size: 13px;
+    margin-top: 6px;
+    line-height: 1.3;
+}
+
+.prob-list {
+    display: block;
+    margin-top: 6px;
+}
+
+.prob-list li {
+    margin: 4px 0;
+    list-style: none;
+    padding-left: 0;
+    color: #234;
+    font-weight: 600;
+}
+
+.samples-note {
+    display: block;
+    margin-top: 10px;
+    color: #677683;
+    font-size: 12px;
+}
+
+/* layout responsivo: em telas pequenas, seila pra 1 coluna */
+@media (max-width: 720px) {
+    .stat-key { min-width: 120px; }
+    .climatology-container { padding: 10px; font-size: 14px; }
 }

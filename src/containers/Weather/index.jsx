@@ -12,6 +12,226 @@ import {
 import "./styles.css";
 import { Link } from "react-router-dom";
 
+// Statistical helpers
+const average = (arr) => (arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null);
+const stdDev = (arr) => {
+    if (!arr.length) return null;
+    const m = average(arr);
+    return Math.sqrt(arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length);
+};
+const percentile = (arr, p) => {
+    if (!arr.length) return null;
+    const s = [...arr].sort((a, b) => a - b);
+    const idx = (s.length - 1) * p;
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if (lo === hi) return s[lo];
+    return s[lo] + (s[hi] - s[lo]) * (idx - lo);
+};
+
+const weathercodeMap = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Depositing rime fog",
+    51: "Drizzle: Light",
+    53: "Drizzle: Moderate",
+    55: "Drizzle: Dense",
+    56: "Freezing Drizzle: Light",
+    57: "Freezing Drizzle: Dense",
+    61: "Rain: Slight",
+    63: "Rain: Moderate",
+    65: "Rain: Heavy",
+    66: "Freezing Rain: Light",
+    67: "Freezing Rain: Heavy",
+    71: "Snow fall: Slight",
+    73: "Snow fall: Moderate",
+    75: "Snow fall: Heavy",
+    77: "Snow grains",
+    80: "Rain showers: Slight",
+    81: "Rain showers: Moderate",
+    82: "Rain showers: Violent",
+    85: "Snow showers: Slight",
+    86: "Snow showers: Heavy",
+    95: "Thunderstorm: Slight/Moderate",
+    96: "Thunderstorm with slight hail",
+    99: "Thunderstorm with heavy hail"
+};
+
+// Function: probabilistic climatology
+const fetchClimatologyProbabilities = async (lat, lng, date, hour) => {
+    if (!date || hour === undefined || lat == null || lng == null) return null;
+
+    const target = new Date(date + "T00:00:00Z"); // considera data em UTC para extrair mês/dia
+    const currentYear = new Date().getUTCFullYear();
+    const anos = Array.from({ length: 10 }, (_, i) => currentYear - 1 - i); // últimos 10 anos
+
+    const samples = {
+        t2m: [],
+        rh2m: [],
+        prectot: [],
+        ws10m: [],
+        appTemp: [],
+        snowfall: [],
+        weatherCodes: []
+    };
+
+    for (let ano of anos) {
+        // create historical date with same month/day in year 'year'
+        const hist = new Date(Date.UTC(ano, target.getUTCMonth(), target.getUTCDate())); // UTC
+        const yyyy = hist.getUTCFullYear();
+        const mm = String(hist.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(hist.getUTCDate()).padStart(2, "0");
+        const startDateStr = `${yyyy}-${mm}-${dd}`;
+        const endDateStr = startDateStr;
+
+        const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}`
+            + `&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,apparent_temperature,snowfall,weathercode`
+            + `&start_date=${startDateStr}&end_date=${endDateStr}&timezone=UTC`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!data?.hourly || !Array.isArray(data.hourly.time)) continue;
+
+            // find index of desired time (time in UTC)
+            const idx = data.hourly.time.findIndex(t => new Date(t).getUTCHours() === parseInt(hour));
+            if (idx === -1) continue;
+
+            const getVal = (arr) => (Array.isArray(arr) ? arr[idx] : null);
+
+            const t2m = getVal(data.hourly.temperature_2m);
+            const rh2m = getVal(data.hourly.relative_humidity_2m);
+            const prectot = getVal(data.hourly.precipitation);
+            const ws10m = getVal(data.hourly.wind_speed_10m);
+            const appTemp = getVal(data.hourly.apparent_temperature);
+            const snowfall = getVal(data.hourly.snowfall);
+            const wcode = getVal(data.hourly.weathercode);
+
+            if (t2m !== null && t2m !== undefined) samples.t2m.push(t2m);
+            if (rh2m !== null && rh2m !== undefined) samples.rh2m.push(rh2m);
+            if (prectot !== null && prectot !== undefined) samples.prectot.push(prectot);
+            if (ws10m !== null && ws10m !== undefined) samples.ws10m.push(ws10m);
+            if (appTemp !== null && appTemp !== undefined) samples.appTemp.push(appTemp);
+            if (snowfall !== null && snowfall !== undefined) samples.snowfall.push(snowfall);
+            if (wcode !== null && wcode !== undefined) samples.weatherCodes.push(wcode);
+        } catch (err) {
+            console.error("Erro ao buscar histórico para ano", ano, err);
+            continue;
+        }
+    }
+
+    const totalSamples = samples.weatherCodes.length || Math.max(
+        samples.t2m.length,
+        samples.rh2m.length,
+        samples.prectot.length,
+        samples.ws10m.length,
+        samples.appTemp.length,
+        samples.snowfall.length
+    );
+
+    // statistics by variable
+    const stats = {
+        t2m: {
+            mean: average(samples.t2m),
+            std: stdDev(samples.t2m),
+            q1: percentile(samples.t2m, 0.25),
+            q3: percentile(samples.t2m, 0.75),
+            min: Math.min(...(samples.t2m.length ? samples.t2m : [NaN])),
+            max: Math.max(...(samples.t2m.length ? samples.t2m : [NaN])),
+            n: samples.t2m.length
+        },
+        rh2m: {
+            mean: average(samples.rh2m),
+            std: stdDev(samples.rh2m),
+            q1: percentile(samples.rh2m, 0.25),
+            q3: percentile(samples.rh2m, 0.75),
+            min: Math.min(...(samples.rh2m.length ? samples.rh2m : [NaN])),
+            max: Math.max(...(samples.rh2m.length ? samples.rh2m : [NaN])),
+            n: samples.rh2m.length
+        },
+        prectot: {
+            mean: average(samples.prectot),
+            std: stdDev(samples.prectot),
+            probPrecipitation: (samples.prectot.filter(v => v > 0).length) / (samples.prectot.length || totalSamples || 1),
+            q1: percentile(samples.prectot, 0.25),
+            q3: percentile(samples.prectot, 0.75),
+            n: samples.prectot.length
+        },
+        ws10m: {
+            mean: average(samples.ws10m),
+            std: stdDev(samples.ws10m),
+            n: samples.ws10m.length
+        },
+        apparentTemperature: {
+            mean: average(samples.appTemp),
+            std: stdDev(samples.appTemp),
+            n: samples.appTemp.length
+        },
+        snowfall: {
+            mean: average(samples.snowfall),
+            std: stdDev(samples.snowfall),
+            probSnow: (samples.snowfall.filter(v => v > 0).length) / (samples.snowfall.length || totalSamples || 1),
+            n: samples.snowfall.length
+        },
+        weather: {
+            counts: (() => {
+                const c = {};
+                for (let code of samples.weatherCodes) c[code] = (c[code] || 0) + 1;
+                return c;
+            })(),
+            probabilities: (() => {
+                const counts = {};
+                for (let code of samples.weatherCodes) counts[code] = (counts[code] || 0) + 1;
+                const entries = Object.entries(counts).map(([code, count]) => {
+                    return [weathercodeMap[code] || code, count / (samples.weatherCodes.length || 1)];
+                });
+                return Object.fromEntries(entries);
+            })(),
+            n: samples.weatherCodes.length
+        },
+        samplesCount: totalSamples
+    };
+
+    return { type: "climatology", stats, samples }; // samples podem ajudar debugging
+};
+
+// Function: fetches historical hourly data for exact date (when available)
+const fetchSpecificDateData = async (lat, lng, date, hour) => {
+    if (!date || hour === undefined) return null;
+    try {
+        const response = await fetch(
+            `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,apparent_temperature,weathercode,snowfall&start_date=${date}&end_date=${date}&timezone=UTC`
+        );
+        const data = await response.json();
+
+        if (!data?.hourly) {
+            console.warn("No hourly data available for this date/location.");
+            return null;
+        }
+
+        const hourIndex = data.hourly.time.findIndex(t => new Date(t).getUTCHours() === parseInt(hour));
+        if (hourIndex === -1) return null;
+
+        return {
+            type: "historical",
+            t2m: data.hourly.temperature_2m[hourIndex],
+            rh2m: data.hourly.relative_humidity_2m[hourIndex],
+            prectot: data.hourly.precipitation[hourIndex],
+            ws10m: data.hourly.wind_speed_10m[hourIndex],
+            apparentTemperature: data.hourly.apparent_temperature[hourIndex],
+            snowfall: data.hourly.snowfall[hourIndex],
+            weatherCode: data.hourly.weathercode[hourIndex],
+            weather: weathercodeMap[data.hourly.weathercode[hourIndex]] ?? "Unknown",
+        };
+    } catch (err) {
+        console.error("Error fetching specific date data:", err);
+        return null;
+    }
+};
+
 function Weather() {
     const [pages, setPages] = useState([]);
     const [flippedPages, setFlippedPages] = useState([]);
@@ -19,7 +239,7 @@ function Weather() {
     const [loadingPages, setLoadingPages] = useState(true);
     const [loadingStage, setLoadingStage] = useState("locals");
 
-    // --- Helper function: save to localStorage ---
+    // Helper function: save to localStorage
     const savePagesToStorage = (updatedPages) => {
         const minimalData = updatedPages.map((p) => ({
             lat: p.lat,
@@ -32,9 +252,7 @@ function Weather() {
         localStorage.setItem("savedWeatherPages", JSON.stringify(minimalData));
     };
 
-
-
-    // --- Function: get location name ---
+    // Function: get location name
     const fetchPlaceName = async (lat, lng) => {
         try {
             const res = await fetch(
@@ -48,7 +266,7 @@ function Weather() {
         }
     };
 
-    // --- Function: fetch data from date range ---
+    // Function: fetch data from date range (NASA POWER)
     const fetchWeatherForDateRange = async (lat, lng, startDate, endDate) => {
         if (!startDate || !endDate) return [];
 
@@ -104,79 +322,7 @@ function Weather() {
         }
     };
 
-    // --- Function: fetch data from a specific date and hour (Open-Meteo) ---
-    const fetchSpecificDateData = async (lat, lng, date, hour) => {
-        if (!date || hour === undefined) return null;
-        try {
-            const startDate = date;
-            const endDate = date;
-
-            const response = await fetch(
-                `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,apparent_temperature,weathercode&start_date=${startDate}&end_date=${endDate}&timezone=UTC`
-            );
-            const data = await response.json();
-
-            if (!data?.hourly) {
-                console.warn("No hourly data available for this date/location.");
-                return null;
-            }
-
-            const hourIndex = data.hourly.time.findIndex(t => new Date(t).getUTCHours() === parseInt(hour));
-            if (hourIndex === -1) return null;
-
-            const weathercodeMap = {
-                0: "Clear sky",
-                1: "Mainly clear",
-                2: "Partly cloudy",
-                3: "Overcast",
-                45: "Fog",
-                48: "Depositing rime fog",
-                51: "Drizzle: Light",
-                53: "Drizzle: Moderate",
-                55: "Drizzle: Dense",
-                56: "Freezing Drizzle: Light",
-                57: "Freezing Drizzle: Dense",
-                61: "Rain: Slight",
-                63: "Rain: Moderate",
-                65: "Rain: Heavy",
-                66: "Freezing Rain: Light",
-                67: "Freezing Rain: Heavy",
-                71: "Snow fall: Slight",
-                73: "Snow fall: Moderate",
-                75: "Snow fall: Heavy",
-                77: "Snow grains",
-                80: "Rain showers: Slight",
-                81: "Rain showers: Moderate",
-                82: "Rain showers: Violent",
-                85: "Snow showers: Slight",
-                86: "Snow showers: Heavy",
-                95: "Thunderstorm: Slight/Moderate",
-                96: "Thunderstorm with slight hail",
-                99: "Thunderstorm with heavy hail"
-            };
-            console.log(weathercodeMap[data.hourly.weathercode[hourIndex]]);
-
-            return {
-                t2m: data.hourly.temperature_2m[hourIndex],
-                rh2m: data.hourly.relative_humidity_2m[hourIndex],
-                prectot: data.hourly.precipitation[hourIndex],
-                ws10m: data.hourly.wind_speed_10m[hourIndex],
-                apparentTemperature: data.hourly.apparent_temperature[hourIndex],
-                weather: weathercodeMap[data.hourly.weathercode[hourIndex]] ?? "Unknown",
-            };
-        } catch (err) {
-            console.error("Error fetching specific date data:", err);
-            return null;
-        }
-    };
-
-
-
-
-
-
-
-    // --- Initial loading ---
+    // Initial loading
     useEffect(() => {
         const loadPages = async () => {
             const savedShapes = JSON.parse(localStorage.getItem("drawnShapes")) || [];
@@ -207,11 +353,18 @@ function Weather() {
                             ? await fetchWeatherForDateRange(lat, lng, startDate, endDate)
                             : null;
 
-                    const specificDateData =
-                        specificDateInput && specificHourInput
-                            ? await fetchSpecificDateData(lat, lng, specificDateInput, specificHourInput)
-                            : null;
-
+                    // if specificDateInput exists, decides if it is future -> calls climatology, otherwise historical
+                    let specificDateData = null;
+                    if (specificDateInput && specificHourInput != null) {
+                        const selected = new Date(specificDateInput + "T00:00:00Z");
+                        const today = new Date();
+                        const isFuture = selected.getTime() > today.getTime();
+                        if (isFuture) {
+                            specificDateData = await fetchClimatologyProbabilities(lat, lng, specificDateInput, specificHourInput);
+                        } else {
+                            specificDateData = await fetchSpecificDateData(lat, lng, specificDateInput, specificHourInput);
+                        }
+                    }
 
                     return {
                         lat,
@@ -226,8 +379,6 @@ function Weather() {
                         specificDateData,
                         loadingSpecificDate: false,
                     };
-
-
                 })
             );
 
@@ -238,12 +389,12 @@ function Weather() {
         loadPages();
     }, []);
 
-    // --- Updates localStorage whenever pages change (no heavy data) ---
+    // Updates localStorage whenever pages change (no heavy data)
     useEffect(() => {
         if (pages.length > 0) savePagesToStorage(pages);
     }, [pages]);
 
-    // --- Search range ---
+    // Search range
     const handleFetchData = async (index) => {
         const page = pages[index];
         if (!page.startDate || !page.endDate) {
@@ -269,7 +420,7 @@ function Weather() {
         );
     };
 
-    // --- Search for a specific date ---
+    // Search for a specific date (historical or climatology if future)
     const handleFetchSpecificDate = async (index) => {
         const page = pages[index];
         if (!page.specificDateInput || page.specificHourInput == null) return;
@@ -280,12 +431,28 @@ function Weather() {
             )
         );
 
-        const specificDateData = await fetchSpecificDateData(
-            page.lat,
-            page.lng,
-            page.specificDateInput,
-            page.specificHourInput
-        );
+        const selected = new Date(page.specificDateInput + "T00:00:00Z");
+        const today = new Date();
+        const isFuture = selected.getTime() > today.getTime();
+
+        let specificDateData = null;
+        if (isFuture) {
+            // calls the function probabilistic climatology
+            specificDateData = await fetchClimatologyProbabilities(
+                page.lat,
+                page.lng,
+                page.specificDateInput,
+                page.specificHourInput
+            );
+        } else {
+            // search exact history
+            specificDateData = await fetchSpecificDateData(
+                page.lat,
+                page.lng,
+                page.specificDateInput,
+                page.specificHourInput
+            );
+        }
 
         setPages((prev) =>
             prev.map((p, i) =>
@@ -294,8 +461,7 @@ function Weather() {
         );
     };
 
-
-    // --- Turn page ---
+    // Turn page
     const handlePageFlip = (index) => {
         const isFlipped = flippedPages.includes(index);
         if (isFlipped) {
@@ -317,7 +483,6 @@ function Weather() {
             </div>
         );
     }
-
 
     return (
         <div className="weather-container">
@@ -435,7 +600,7 @@ function Weather() {
                                                 <Line
                                                     type="monotone"
                                                     dataKey="heatIndex"
-                                                    name="Heat Index (℃)"
+                                                    name="Apparent Temperature (℃)"
                                                     stroke="#a8bae4"
                                                     dot={false}
                                                 />
@@ -492,7 +657,8 @@ function Weather() {
                                 <div className="page-content">
                                     {page.loadingSpecificDate && <p>Loading weather data...</p>}
 
-                                    {!page.loadingSpecificDate && page.specificDateData ? (
+                                    {/* If there is historical specificDateData */}
+                                    {!page.loadingSpecificDate && page.specificDateData && page.specificDateData.type === "historical" ? (
                                         <div className="weather-cards">
                                             {page.specificDateData.t2m != null &&
                                                 page.specificDateData.rh2m != null &&
@@ -510,28 +676,160 @@ function Weather() {
                                                     <div className="weather-info">
                                                         <h3 className="labelT">&#9729; Humidity:</h3>
                                                         <p className="label">{page.specificDateData.rh2m} %</p>
-                                                        <p>Degree Celsius</p>
+                                                        <p>Percent</p>
                                                     </div>
                                                     <div className="weather-info">
                                                         <h3 className="labelT">&#9730; Precipitation:</h3>
                                                         <p className="label">{page.specificDateData.prectot} mm</p>
-                                                        <p>Degree Celsius</p>
+                                                        <p>Millimeters</p>
                                                     </div>
                                                     <div className="weather-info">
                                                         <h3 className="labelT">&#9992; Wind Speed:</h3>
                                                         <p className="label">{page.specificDateData.ws10m} m/s</p>
-                                                        <p>Degree Celsius</p>
+                                                        <p>kilometers per hour</p>
                                                     </div>
                                                     <div className="weather-info">
                                                         <h3 className="labelT">&#127777; Apparent Temperature:</h3>
                                                         <p className="label">{page.specificDateData.apparentTemperature} ℃</p>
                                                         <p>Degree Celsius</p>
                                                     </div>
+                                                    <div className="weather-info">
+                                                        <h3 className="labelT">&#9731; Snowfall:</h3>
+                                                        <p className="label">{page.specificDateData.snowfall} mm</p>
+                                                        <p>Millimeters</p>
+                                                    </div>
                                                 </>
                                             ) : (
                                                 <p className="weather-info">No data available yet :/</p>
                                             )}
                                         </div>
+
+                                    ) : (!page.loadingSpecificDate && page.specificDateData && page.specificDateData.type === "climatology") ? (
+                                        <div className="climatology-container">
+                                            <div className="climatology-title">
+                                                Estimate based on historical data (last 10 years)
+                                            </div>
+
+                                            <div className="climatology-section">
+                                                <div className="section-title">Temperature</div>
+                                                {page.specificDateData.stats.t2m.mean != null ? (
+                                                    <>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Expected (average):</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.t2m.mean.toFixed(1)} ℃</div>
+                                                        </div>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Typical variation:</div>
+                                                            <div className="stat-value">±{page.specificDateData.stats.t2m.std != null ? page.specificDateData.stats.t2m.std.toFixed(1) : "N/A"} ℃</div>
+                                                        </div>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Common range (25%–75%):</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.t2m.q1 ?? "N/A"} – {page.specificDateData.stats.t2m.q3 ?? "N/A"} ℃</div>
+                                                        </div>
+                                                        <div className="stat-explain">
+                                                            What this means: historically, for the same date and time, the temperature usually stays close to the reported average — the variation shows how different it can be.
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="stat-explain">There are not enough historical samples for temperature.</div>
+                                                )}
+                                            </div>
+
+                                            <div className="climatology-section">
+                                                <div className="section-title">Humidity</div>
+                                                {page.specificDateData.stats.rh2m.mean != null ? (
+                                                    <>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Expected (average):</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.rh2m.mean.toFixed(0)} %</div>
+                                                        </div>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Typical variation:</div>
+                                                            <div className="stat-value">±{page.specificDateData.stats.rh2m.std != null ? page.specificDateData.stats.rh2m.std.toFixed(0) : "N/A"} %</div>
+                                                        </div>
+                                                        <div className="stat-explain">Humidity indicates how muggy it feels and the likelihood of fog/drizzle.</div>
+                                                    </>
+                                                ) : (
+                                                    <div className="stat-explain">There are not enough historical samples for humidity.</div>
+                                                )}
+                                            </div>
+
+                                            <div className="climatology-section">
+                                                <div className="section-title">Rain</div>
+                                                {page.specificDateData.stats.prectot.n > 0 ? (
+                                                    <>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Historical chance of rain:</div>
+                                                            <div className="stat-value">{(page.specificDateData.stats.prectot.probPrecipitation * 100).toFixed(0)}%</div>
+                                                        </div>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Average when it occurs:</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.prectot.mean != null ? page.specificDateData.stats.prectot.mean.toFixed(1) + " mm" : "N/A"}</div>
+                                                        </div>
+                                                        <div className="stat-explain">Simple interpretation: e.g., 30% = in 3 out of 10 years there was rain at that same date/time.</div>
+                                                    </>
+                                                ) : (
+                                                    <div className="stat-explain">There are not enough historical samples for precipitation.</div>
+                                                )}
+                                            </div>
+
+                                            <div className="climatology-section">
+                                                <div className="section-title">Snow</div>
+                                                {page.specificDateData.stats.snowfall.n > 0 ? (
+                                                    <>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Historical chance of snow:</div>
+                                                            <div className="stat-value">{(page.specificDateData.stats.snowfall.probSnow * 100).toFixed(0)}%</div>
+                                                        </div>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Average when it occurs:</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.snowfall.mean != null ? page.specificDateData.stats.snowfall.mean.toFixed(1) + " mm (water equivalent)" : "N/A"}</div>
+                                                        </div>
+                                                        <div className="stat-explain">Note: the unit is mm of water equivalent; 1 mm ≈ ~1 cm of fluffy snow, depending on snow type.</div>
+                                                    </>
+                                                ) : (
+                                                    <div className="stat-explain">There are not enough historical samples for snow.</div>
+                                                )}
+                                            </div>
+
+                                            <div className="climatology-section">
+                                                <div className="section-title">Wind</div>
+                                                {page.specificDateData.stats.ws10m.n > 0 ? (
+                                                    <>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Average speed:</div>
+                                                            <div className="stat-value">{page.specificDateData.stats.ws10m.mean.toFixed(1)} m/s</div>
+                                                        </div>
+                                                        <div className="stat-row">
+                                                            <div className="stat-key">Typical variation:</div>
+                                                            <div className="stat-value">±{page.specificDateData.stats.ws10m.std != null ? page.specificDateData.stats.ws10m.std.toFixed(1) : "N/A"} m/s</div>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="stat-explain">There are not enough historical samples for wind.</div>
+                                                )}
+                                            </div>
+
+                                            <div className="climatology-section">
+                                                <div className="section-title">Weather condition (categories)</div>
+                                                {page.specificDateData.stats.weather.probabilities && Object.keys(page.specificDateData.stats.weather.probabilities).length > 0 ? (
+                                                    <>
+                                                        <ul className="prob-list">
+                                                            {Object.entries(page.specificDateData.stats.weather.probabilities).map(([desc, p]) => (
+                                                                <li key={desc}>{desc}: {(p * 100).toFixed(0)}%</li>
+                                                            ))}
+                                                        </ul>
+                                                        <div className="stat-explain">Example: "Clear sky: 60%" means that in 6 out of 10 years, at that date/time, the sky was clear.</div>
+                                                    </>
+                                                ) : (
+                                                    <div className="stat-explain">There are not enough weather codes to form probabilities.</div>
+                                                )}
+                                            </div>
+
+                                            <div className="samples-note">Basis of estimates: last {page.specificDateData.stats.samplesCount} samples (one per year, same date/time, last 10 years).</div>
+                                        </div>
+
+
                                     ) : !page.loadingSpecificDate ? (
                                         <div className="no-data">
                                             <p>
@@ -547,6 +845,7 @@ function Weather() {
                                     </div>
                                 </div>
                             </div>
+
 
                         </div>
                     );
